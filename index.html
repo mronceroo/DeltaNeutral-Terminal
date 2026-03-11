@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Δ Delta Neutral — Live Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #06090f;
+    --card: rgba(14, 20, 32, 0.92);
+    --card-hover: rgba(18, 26, 42, 0.95);
+    --b1: rgba(255,255,255,0.06);
+    --b2: rgba(255,255,255,0.10);
+    --b3: rgba(255,255,255,0.16);
+    --green: #00e87a;
+    --gd: rgba(0,232,122,0.10);
+    --red: #ff3b5c;
+    --rd: rgba(255,59,92,0.10);
+    --amber: #ffb83f;
+    --ad: rgba(255,184,63,0.10);
+    --blue: #3b9eff;
+    --bd: rgba(59,158,255,0.10);
+    --teal: #06b6d4;
+    --td: rgba(6,182,212,0.10);
+    --purple: #a855f7;
+    --tx: #e8ecf4;
+    --t2: #7f8da0;
+    --t3: #3f4a5a;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --radius-xs: 8px;
+    --shadow-card: 0 2px 12px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.04);
+    --shadow-elevated: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
+    --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--tx);
+    font-family: var(--mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Subtle grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      linear-gradient(rgba(59,158,255,0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,158,255,0.018) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /* Top accent line */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--blue) 0%, var(--purple) 40%, var(--green) 70%, var(--teal) 100%);
+    z-index: 9999;
+    opacity: 0.6;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 22px 24px;
+  }
+
+  /* ─── HEADER ──────────────────────────────────────────────────── */
+  .hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 26px;
+    background: var(--card);
+    border: 1px solid var(--b2);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    backdrop-filter: blur(24px);
+    box-shadow: var(--shadow-card);
+  }
+  .logo { display: flex; align-items: center; gap: 14px; }
+  .logo-i {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    font-size: 21px;
+    font-weight: 800;
+    font-family: var(--sans);
+    color: var(--blue);
+    background: linear-gradient(135deg, rgba(59,158,255,0.16), rgba(0,232,122,0.16));
+    border: 1px solid rgba(59,158,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 20px rgba(59,158,255,0.08);
+  }
+  .logo-t {
+    font-family: var(--sans);
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    background: linear-gradient(135deg, var(--tx) 60%, var(--blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .logo-s {
+    font-size: 10px;
+    color: var(--t2);
+    margin-top: 3px;
+    letter-spacing: 0.2px;
+  }
+  .hdr-r { display: flex; align-items: center; gap: 10px; }
+  .lbadge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    transition: all 0.4s;
+    background: var(--ad);
+    border: 1px solid rgba(255,184,63,0.25);
+    color: var(--amber);
+  }
+  .ldot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  @keyframes blink { 0%,100% { opacity: 1 } 50% { opacity: 0.25 } }
+  .blink { animation: blink 1.4s ease-in-out infinite; }
+  .sndbtn {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    font-size: 15px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--b1);
+    color: var(--t2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+  }
+  .sndbtn:hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--tx);
+    border-color: var(--b2);
+    transform: translateY(-1px);
+  }
+  .sndbtn.on {
+    background: var(--ad);
+    border-color: rgba(255,184,63,0.3);
+    color: var(--amber);
+  }
+
+  /* ─── CONTROLS BAR ────────────────────────────────────────────── */
+  .cbar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 14px 20px;
+    background: var(--card);
+    border: 1px solid var(--b1);
+    border-radius: var(--radius-sm);
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-card);
+  }
+  .cg { display: flex; align-items: center; gap: 8px; }
+  .cl {
+    font-size: 9px;
+    color: var(--t3);
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  select, input[type=number] {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--b1);
+    border-radius: var(--radius-xs);
+    color: var(--tx);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 7px 12px;
+    outline: none;
+    transition: all var(--transition);
+  }
+  select option { background: #0a0f1a; color: var(--tx); }
+  select:focus, input[type=number]:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(59,158,255,0.12);
+    background: rgba(59,158,255,0.04);
+  }
+  select:hover, input[type=number]:hover {
+    border-color: var(--b2);
+    background: rgba(255,255,255,0.06);
+  }
+  input[type=number] { width: 92px; }
+
+  /* ─── GRID LAYOUTS ────────────────────────────────────────────── */
+  .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .g21 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+
+  /* ─── CARD ─────────────────────────────────────────────────────── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--b1);
+    border-radius: var(--radius);
+    padding: 20px;
+    backdrop-filter: blur(16px);
+    transition: border-color 0.35s, box-shadow 0.35s;
+    box-shadow: var(--shadow-card);
+  }
+  .card:hover {
+    background: var(--card-hover);
+  }
+  .card.cg {
+    display: block !important;
+    border-color: rgba(0,232,122,0.25) !important;
+    box-shadow: var(--shadow-card), 0 0 30px rgba(0,232,122,0.06), inset 0 1px 0 rgba(0,232,122,0.08);
+  }
+  .card.cr {
+    display: block !important;
+    border-color: rgba(255,59,92,0.25) !important;
+    box-shadow: var(--shadow-card), 0 0 30px rgba(255,59,92,0.06), inset 0 1px 0 rgba(255,59,92,0.08);
+  }
+  .card.ca {
+    display: block !important;
+    border-color: rgba(255,184,63,0.25) !important;
+    box-shadow: var(--shadow-card), 0 0 30px rgba(255,184,63,0.06), inset 0 1px 0 rgba(255,184,63,0.08);
+  }
+
+  .ttl {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 9px;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: var(--t2);
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--b1);
+  }
+  .bdg {
+    font-size: 9.5px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .bhl {
+    background: rgba(168,85,247,0.12);
+    color: var(--purple);
+    border: 1px solid rgba(168,85,247,0.22);
+  }
+  .bbs {
+    background: rgba(59,158,255,0.12);
+    color: var(--blue);
+    border: 1px solid rgba(59,158,255,0.22);
+  }
+  .sdot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  /* ─── PRICE CARD ──────────────────────────────────────────────── */
+  .pxbig {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -1.2px;
+    margin: 6px 0 4px;
+    transition: color 0.5s;
+  }
+  .pmrow {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .pm {
+    font-size: 10.5px;
+    color: var(--t2);
+    line-height: 1.7;
+  }
+  .pm span {
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    opacity: 0.7;
+  }
+  .pm strong {
+    display: block;
+    font-size: 12px;
+    color: var(--tx);
+  }
+  .pm.pos strong { color: var(--green); }
+  .pm.neg strong { color: var(--red); }
+  .pm.warn strong { color: var(--amber); }
+
+  /* ─── SPREAD CARD GRID ────────────────────────────────────────── */
+  .sp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .sp-cell {
+    padding: 12px 14px;
+    border-radius: var(--radius-xs);
+    background: rgba(255,255,255,0.025);
+    border: 1px solid var(--b1);
+    transition: background var(--transition);
+  }
+  .sp-cell:hover { background: rgba(255,255,255,0.04); }
+  .sp-lbl {
+    font-size: 9px;
+    color: var(--t2);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .sp-val {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .sp-sub {
+    font-size: 10px;
+    color: var(--t3);
+    margin-top: 4px;
+  }
+  .sp-dir-box {
+    grid-column: 1/-1;
+    padding: 11px 14px;
+    border-radius: var(--radius-xs);
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all var(--transition);
+  }
+
+  /* ─── EXECUTION BOX ───────────────────────────────────────────── */
+  .sp-exec {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: var(--radius-xs);
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--b1);
+    font-size: 11px;
+    color: var(--t2);
+    text-align: center;
+  }
+  .sp-exec strong { color: var(--tx); font-size: 12px; }
+
+  .lp-block {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border-radius: var(--radius-sm);
+    background: rgba(6,182,212,0.05);
+    border: 1px solid rgba(6,182,212,0.15);
+  }
+  .lp-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .lp-side { flex: 1; min-width: 160px; }
+  .lp-lbl {
+    font-size: 9px;
+    color: var(--teal);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    font-weight: 600;
+  }
+  .lp-val { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+  .lp-sub { font-size: 10px; color: var(--t2); margin-top: 3px; }
+  .lp-divider {
+    width: 1px;
+    height: 48px;
+    background: linear-gradient(180deg, transparent, rgba(6,182,212,0.25), transparent);
+  }
+  .lp-save { text-align: center; min-width: 120px; }
+  .lp-save-val { font-size: 14px; font-weight: 700; color: var(--green); }
+  .lp-save-lbl { font-size: 9px; color: var(--t2); margin-top: 3px; }
+  .copybtn {
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(6,182,212,0.2);
+    background: transparent;
+    color: var(--teal);
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 10px;
+    transition: all var(--transition);
+    margin-top: 6px;
+    display: inline-block;
+  }
+  .copybtn:hover {
+    background: rgba(6,182,212,0.1);
+    border-color: rgba(6,182,212,0.35);
+    transform: translateY(-1px);
+  }
+
+  /* ─── SEMÁFORO ────────────────────────────────────────────────── */
+  .semrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: var(--radius-xs);
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--b1);
+    font-size: 11px;
+    margin-bottom: 7px;
+    flex-shrink: 0;
+    transition: background var(--transition);
+  }
+  .semrow:hover {
+    background: rgba(255,255,255,0.04);
+  }
+  .si { font-size: 14px; width: 20px; flex-shrink: 0; }
+  .sl { flex: 1; color: var(--t2); font-size: 11px; }
+  .sv {
+    font-weight: 700;
+    font-size: 12px;
+    min-width: 72px;
+    text-align: right;
+  }
+  .sp_ { font-size: 15px; margin-left: 4px; }
+
+  .gobox {
+    margin-top: 12px;
+    padding: 15px 18px;
+    border-radius: var(--radius-sm);
+    text-align: center;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+    transition: all 0.4s;
+    flex-shrink: 0;
+  }
+  .gg {
+    background: linear-gradient(135deg, rgba(0,232,122,0.12), rgba(0,232,122,0.06));
+    border: 1px solid rgba(0,232,122,0.3);
+    color: var(--green);
+    box-shadow: 0 0 24px rgba(0,232,122,0.08);
+  }
+  .gr {
+    background: linear-gradient(135deg, rgba(255,59,92,0.12), rgba(255,59,92,0.06));
+    border: 1px solid rgba(255,59,92,0.3);
+    color: var(--red);
+    box-shadow: 0 0 24px rgba(255,59,92,0.08);
+  }
+  .ga {
+    background: linear-gradient(135deg, rgba(255,184,63,0.12), rgba(255,184,63,0.06));
+    border: 1px solid rgba(255,184,63,0.3);
+    color: var(--amber);
+    box-shadow: 0 0 24px rgba(255,184,63,0.08);
+  }
+
+  /* ─── PNL ──────────────────────────────────────────────────────── */
+  .pg {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .pc {
+    padding: 12px 14px;
+    border-radius: var(--radius-xs);
+    background: rgba(255,255,255,0.025);
+    border: 1px solid var(--b1);
+    transition: background var(--transition);
+  }
+  .pc:hover { background: rgba(255,255,255,0.04); }
+  .pl {
+    font-size: 9px;
+    color: var(--t2);
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    font-weight: 500;
+  }
+  .pv { font-size: 15px; font-weight: 700; }
+  .ptot {
+    margin-top: 12px;
+    padding: 16px;
+    border-radius: var(--radius-sm);
+    text-align: center;
+    transition: all 0.3s;
+    border: 1px solid var(--b1);
+  }
+  .ptl {
+    font-size: 10px;
+    color: var(--t2);
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .ptv { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+  .fnote {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: var(--radius-xs);
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--b1);
+    font-size: 10px;
+    color: var(--t2);
+    line-height: 1.7;
+  }
+
+  /* ─── CHART & LOG ─────────────────────────────────────────────── */
+  .chwrap { height: 195px; }
+  .loglist {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-height: 230px;
+    overflow-y: auto;
+  }
+  .loglist::-webkit-scrollbar { width: 4px; }
+  .loglist::-webkit-scrollbar-track { background: transparent; }
+  .loglist::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 4px; }
+  .loglist::-webkit-scrollbar-thumb:hover { background: var(--b3); }
+  .li {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: var(--radius-xs);
+    background: rgba(255,255,255,0.018);
+    border: 1px solid var(--b1);
+    font-size: 11px;
+    transition: background var(--transition);
+  }
+  .li:hover { background: rgba(255,255,255,0.04); }
+  .lt { color: var(--t3); min-width: 56px; font-size: 10px; }
+  .lsy { font-weight: 700; min-width: 36px; }
+  .lsp { font-weight: 700; min-width: 54px; }
+  .lsp.g { color: var(--green); }
+  .lsp.w { color: var(--amber); }
+  .lsp.b { color: var(--red); }
+  .ldi { color: var(--t2); font-size: 10px; flex: 1; }
+  .lvi { font-size: 13px; }
+
+  /* ─── MANUAL BOX ──────────────────────────────────────────────── */
+  .mbox {
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: var(--radius-xs);
+    background: var(--ad);
+    border: 1px solid rgba(255,184,63,0.2);
+    font-size: 11px;
+    color: var(--amber);
+    display: none;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .mbox input { width: 130px; font-size: 12px; padding: 5px 9px; }
+
+  /* ─── TOASTS ──────────────────────────────────────────────────── */
+  .tw {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .toast {
+    padding: 12px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    backdrop-filter: blur(24px);
+    max-width: 300px;
+    animation: tst 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  @keyframes tst {
+    from { opacity: 0; transform: translateX(20px) scale(0.96); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+  }
+  .tgo { background: rgba(0,232,122,0.92); color: #000; }
+  .twn { background: rgba(255,184,63,0.92); color: #000; }
+  .tin { background: rgba(59,158,255,0.92); color: #fff; }
+  .ter { background: rgba(255,59,92,0.92); color: #fff; }
+
+  .btngh {
+    padding: 5px 14px;
+    border-radius: var(--radius-xs);
+    border: 1px solid var(--b1);
+    background: transparent;
+    color: var(--t2);
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all var(--transition);
+  }
+  .btngh:hover {
+    border-color: var(--blue);
+    color: var(--tx);
+    background: rgba(59,158,255,0.06);
+    transform: translateY(-1px);
+  }
+  .dv { width: 1px; height: 24px; background: var(--b1); }
+
+  /* ─── API STATUS ──────────────────────────────────────────────── */
+  .api-status {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.015);
+    border: 1px solid var(--b1);
+    margin-bottom: 16px;
+    font-size: 10px;
+    color: var(--t2);
+    flex-wrap: wrap;
+  }
+  .api-item { display: flex; align-items: center; gap: 7px; }
+  .api-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  /* ─── HELP MODAL ──────────────────────────────────────────────── */
+  .help-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+    animation: fi 0.25s ease;
+  }
+  @keyframes fi { from { opacity: 0 } to { opacity: 1 } }
+  .help-modal {
+    background: linear-gradient(180deg, rgba(14,20,32,0.98), rgba(10,15,26,0.99));
+    border: 1px solid var(--b2);
+    border-radius: 20px;
+    width: 90%;
+    max-width: 620px;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 28px;
+    position: relative;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
+  }
+  .help-modal::-webkit-scrollbar { width: 4px; }
+  .help-modal::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 4px; }
+  .help-close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-xs);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--b1);
+    color: var(--t2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+    font-size: 14px;
+  }
+  .help-close:hover {
+    background: var(--red);
+    color: #fff;
+    border-color: var(--red);
+    transform: scale(1.05);
+  }
+  .help-tit {
+    font-family: var(--sans);
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, var(--blue), var(--teal));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .help-sec {
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--b1);
+    padding-bottom: 16px;
+  }
+  .help-sec:last-child { border-bottom: none; }
+  .help-st {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--tx);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .help-st::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+  }
+  .help-txt {
+    font-size: 12px;
+    color: var(--t2);
+    line-height: 1.7;
+    margin-bottom: 4px;
+  }
+  .help-txt strong { color: var(--tx); }
+
+  /* ─── RESPONSIVE ──────────────────────────────────────────────── */
+
+  /* MINI SPARKLINES */
+  .mini-chart-wrap { height: 45px; margin-top: 10px; opacity: 0.8; }
+
+  /* TRACKER CARD */
+  .trk-empty{text-align:center;padding:20px 10px;}
+  .trk-desc{font-size:11px;color:var(--t2);line-height:1.7;margin-bottom:16px;}
+  .trk-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .trk-field{display:flex;flex-direction:column;gap:4px;}
+  .trk-field.full{grid-column:1/-1;}
+  .trk-lbl{font-size:9px;color:var(--t2);letter-spacing:1px;text-transform:uppercase;font-weight:600;}
+  .trk-input{background:rgba(255,255,255,0.04);border:1px solid var(--b1);border-radius:var(--radius-xs);color:var(--tx);font-family:var(--mono);font-size:13px;padding:8px 12px;outline:none;transition:all var(--transition);width:100%;}
+  .trk-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,158,255,0.12);}
+  .trk-btn{width:100%;padding:11px;border-radius:var(--radius-sm);border:none;color:var(--tx);font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;transition:all var(--transition);letter-spacing:0.5px;}
+  .trk-btn:hover{transform:translateY(-1px);}
+  .trk-btn-go{background:linear-gradient(135deg,rgba(59,158,255,0.3),rgba(0,232,122,0.3));}
+  .trk-btn-go:hover{background:linear-gradient(135deg,rgba(59,158,255,0.5),rgba(0,232,122,0.5));}
+  .trk-btn-fill{background:rgba(255,255,255,0.05);margin-top:6px;font-weight:500;font-size:11px;}
+  .trk-btn-fill:hover{background:rgba(255,255,255,0.1);}
+  .trk-btn-close{background:rgba(255,59,92,0.15);border:1px solid rgba(255,59,92,0.25);color:var(--red);font-size:11px;margin-top:8px;}
+  .trk-btn-close:hover{background:rgba(255,59,92,0.3);}
+  .trk-live{display:none;}
+  .trk-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--b1);}
+  .trk-pair{font-family:var(--sans);font-size:16px;font-weight:800;}
+  .trk-dir{font-size:10px;padding:3px 10px;border-radius:100px;font-weight:700;background:rgba(59,158,255,0.12);color:var(--blue);border:1px solid rgba(59,158,255,0.22);}
+  .trk-timer{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:var(--radius-xs);background:rgba(255,255,255,0.02);border:1px solid var(--b1);margin-bottom:12px;font-size:11px;color:var(--t2);}
+  .trk-timer-val{font-size:18px;font-weight:700;color:var(--tx);font-variant-numeric:tabular-nums;}
+  .trk-pnl-box{padding:16px;border-radius:var(--radius-sm);text-align:center;margin-bottom:12px;border:1px solid var(--b1);transition:all 0.3s;}
+  .trk-pnl-lbl{font-size:10px;color:var(--t2);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+  .trk-pnl-val{font-size:28px;font-weight:700;letter-spacing:-1px;}
+  .trk-pnl-roi{font-size:12px;margin-top:4px;font-weight:600;}
+  .trk-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+  .trk-cell{padding:10px 12px;border-radius:var(--radius-xs);background:rgba(255,255,255,0.02);border:1px solid var(--b1);}
+  .trk-cell-lbl{font-size:8px;color:var(--t2);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:3px;}
+  .trk-cell-val{font-size:14px;font-weight:700;}
+  .trk-entry-info{font-size:10px;color:var(--t3);text-align:center;margin-top:6px;line-height:1.6;}
+  @media (max-width: 900px) {
+    .g3, .g2, .g21 { grid-template-columns: 1fr; }
+    .app { padding: 14px 12px; }
+    .hdr { padding: 14px 18px; flex-wrap: wrap; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="hdr">
+    <div class="logo">
+      <div class="logo-i">Δ</div>
+      <div>
+        <div class="logo-t">Delta Neutral Monitor</div>
+        <div class="logo-s">HyENA (Hyperliquid HIP-3 · USDe) × Hibachi (Base · USDT)</div>
+      </div>
+    </div>
+    <div class="hdr-r">
+      <div id="lbadge" class="lbadge">
+        <div class="ldot blink" id="ldot" style="background:var(--amber)"></div>
+        <span id="ltxt">CONECTANDO…</span>
+      </div>
+      <div class="dv"></div>
+      <button class="sndbtn" id="sndbtn" onclick="toggleSound()" title="Alertas sonoras">🔕</button>
+      <button class="sndbtn" onclick="showCalc()" title="Calculadora PNL">🧮</button>
+      <button class="sndbtn" onclick="showHelp()" title="Ayuda">❓</button>
+    </div>
+  </div>
+
+  <div class="cbar">
+    <div class="cg">
+      <span class="cl">PAR</span>
+      <select id="sym" onchange="onSymChange()">
+        <option value="BTC">BTC</option> <option value="ETH">ETH</option>
+        <option value="SOL">SOL</option> <option value="XRP">XRP</option>
+        <option value="BNB">BNB</option> <option value="HYPE">HYPE</option>
+        <option value="SUI">SUI</option>
+      </select>
+    </div>
+    <div class="cg">
+      <span class="cl">HyENA</span>
+      <select id="hlType" onchange="recalc()">
+        <option value="limit">LIMIT</option>
+        <option value="market">MARKET</option>
+      </select>
+    </div>
+    <div class="cg">
+      <span class="cl">Hibachi</span>
+      <select id="hibType" onchange="recalc()">
+        <option value="limit">LIMIT</option>
+        <option value="market">MARKET</option>
+      </select>
+    </div>
+    <div class="cg">
+      <span class="cl">MARGEN</span>
+      <input type="number" id="margin" value="200" min="10" step="10" onchange="recalc()">
+    </div>
+    <div class="cg">
+      <span class="cl">LEV</span>
+      <select id="lev" onchange="recalc()">
+        <option value="3">3x</option>
+        <option value="5" selected>5x</option>
+        <option value="10">10x</option>
+        <option value="20">20x</option>
+      </select>
+    </div>
+    <div class="cg">
+      <span class="cl">HORAS</span>
+      <input type="number" id="periods" value="8" min="1" max="72" onchange="recalc()">
+    </div>
+    <div class="cg" style="margin-left:auto">
+      <span class="cl">UMBRAL</span>
+      <input type="number" id="thresh" value="0.10" min="0.01" max="1" step="0.01" onchange="recalc()">
+      <span class="cl">%</span>
+    </div>
+    <div class="cg">
+      <span class="cl">REFRESCO</span>
+      <select id="rate" onchange="restartLoop()">
+        <option value="1000">1s</option>
+        <option value="3000">3s</option>
+        <option value="5000"selected>5s</option>
+        <option value="10000">10s</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="api-status" id="apiStatus">
+    <span style="color:var(--t3);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;font-weight:600;">APIS</span>
+    <div class="api-item">
+      <div class="api-dot" id="apiDotHL" style="background:var(--amber)"></div>
+      <span id="apiTxtHL">Hyperliquid — conectando…</span>
+    </div>
+    <span style="color:var(--t3)">|</span>
+    <div class="api-item">
+      <div class="api-dot" id="apiDotHib" style="background:var(--amber)"></div>
+      <span id="apiTxtHib">Hibachi — conectando…</span>
+    </div>
+  </div>
+
+  <div class="g3">
+    <div class="card" id="cHL">
+      <div class="ttl">
+        <span><span class="sdot" id="dHL" style="background:var(--amber)"></span>HYENA DEX</span>
+        <span class="bdg bhl">Hyperliquid HIP-3 · USDe</span>
+      </div>
+      <div id="pHL" class="pxbig">—</div>
+      <div class="pmrow">
+        <div class="pm" id="pmHLf"><span>FUNDING / 1H</span><strong id="vHLf">—</strong></div>
+        <div class="pm"><span>MARK PRICE</span><strong id="vHLm">—</strong></div>
+        <div class="pm"><span>MAKER FEE</span><strong style="color:var(--green)">0.020%</strong></div>
+        <div class="pm"><span>TAKER FEE</span><strong style="color:var(--amber)">0.060%</strong></div>
+      </div>
+      <div class="mini-chart-wrap"><canvas id="miniHL"></canvas></div>
+    </div>
+
+    <div class="card" id="cSp">
+      <div class="ttl">
+        <span>SPREAD EN TIEMPO REAL</span>
+        <span id="spSym" style="font-size:10px;color:var(--blue);font-weight:700;">BTC</span>
+      </div>
+      <div class="sp-grid">
+        <div class="sp-cell">
+          <div class="sp-lbl">Spread absoluto</div>
+          <div class="sp-val" id="spAbs">—</div>
+          <div class="sp-sub">Diferencia en USD</div>
+        </div>
+        <div class="sp-cell">
+          <div class="sp-lbl">Spread relativo</div>
+          <div class="sp-val" id="spPct" style="color:var(--t2)">—</div>
+          <div class="sp-sub">Porcentaje del precio</div>
+        </div>
+        <div class="sp-dir-box" id="spDir" style="background:rgba(255,255,255,0.03);color:var(--t2)">Esperando datos…</div>
+      </div>
+
+      <div class="sp-exec">DIRECCIÓN EJECUCIÓN: <strong id="execDir">—</strong></div>
+
+      <div class="lp-block" id="lpBlock" style="display:none">
+        <div class="lp-row">
+          <div class="lp-side">
+            <div class="lp-lbl">HyENA (<span id="lpHLaction">—</span>)</div>
+            <div class="lp-val" id="lpHLval" style="color:var(--purple)">—</div>
+            <button class="copybtn" style="color:var(--purple);border-color:rgba(168,85,247,0.3)" onclick="copyEl('lpHLval')">📋 Copiar HyENA Px</button>
+          </div>
+          <div class="lp-divider"></div>
+          <div class="lp-side">
+            <div class="lp-lbl">Hibachi (<span id="lpHibAction">—</span>)</div>
+            <div class="lp-val" id="lpHibval" style="color:var(--blue)">—</div>
+            <button class="copybtn" onclick="copyEl('lpHibval')">📋 Copiar Hibachi Px</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="cHib">
+      <div class="ttl">
+        <span><span class="sdot" id="dHib" style="background:var(--amber)"></span>HIBACHI DEX</span>
+        <span class="bdg bbs">Base Chain · USDT</span>
+      </div>
+      <div id="pHib" class="pxbig">—</div>
+      <div class="pmrow">
+        <div class="pm" id="pmHibf"><span>FUNDING / 4H</span><strong id="vHibf">—</strong></div>
+        <div class="pm"><span>MARK PRICE</span><strong id="vHibm">—</strong></div>
+        <div class="pm"><span>MAKER FEE</span><strong style="color:var(--green)">0.000%</strong></div>
+        <div class="pm"><span>TAKER FEE</span><strong style="color:var(--amber)">0.045%</strong></div>
+      </div>
+      <div class="mini-chart-wrap"><canvas id="miniHib"></canvas></div>
+      <div id="mbox" class="mbox">
+        ⚠ Precio manual temporal:
+        <input type="number" id="minput" placeholder="Precio" step="0.01" onchange="setManual()">
+      </div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card" id="cSem">
+      <div class="ttl"><span>🚦 SEMÁFORO DE VIABILIDAD</span></div>
+      <div class="semrow"><div class="si">📊</div><div class="sl">Spread relativo</div><div class="sv" id="sv0">—</div><div class="sp_" id="sp0">⬜</div></div>
+      <div class="semrow"><div class="si">💸</div><div class="sl">Coste Total (Fees + Slippage)</div><div class="sv" id="sv1">—</div><div class="sp_" id="sp1">⬜</div></div>
+      <div class="semrow"><div class="si">💰</div><div class="sl">Funding Neto Estimado</div><div class="sv" id="sv2">—</div><div class="sp_" id="sp2">⬜</div></div>
+      <div class="semrow"><div class="si">📈</div><div class="sl">Ratio Beneficio / Coste</div><div class="sv" id="sv3">—</div><div class="sp_" id="sp3">⬜</div></div>
+      <div class="semrow"><div class="si">🎯</div><div class="sl">PNL Neto Final</div><div class="sv" id="sv4">—</div><div class="sp_" id="sp4">⬜</div></div>
+      <div id="gobox" class="gobox ga">⏳ Esperando datos de ambos DEXes…</div>
+    </div>
+
+    <div class="card">
+      <div class="ttl">
+        <span>💡 ESTIMADOR DE PNL</span>
+        <span id="pnlsym" style="color:var(--blue);font-size:10px;font-weight:700;">BTC</span>
+      </div>
+      <div class="pg">
+        <div class="pc"><div class="pl">Notional total</div><div class="pv" id="pv0" style="color:var(--blue)">$—</div></div>
+        <div class="pc"><div class="pl">Comisiones (Fees)</div><div class="pv" id="pv1" style="color:var(--red)">$—</div></div>
+        <div class="pc"><div class="pl">Spread Capturado</div><div class="pv" id="pv2" style="color:var(--green)">$—</div></div>
+        <div class="pc"><div class="pl">Funding Neto (Total)</div><div class="pv" id="pv3" style="color:var(--green)">$—</div></div>
+        <div class="pc" style="grid-column:1/-1"><div class="pl">Funding Break-even</div>
+          <div class="pv" id="pv4" style="color:var(--amber);font-size:13px;">—</div></div>
+      </div>
+      <div id="ptot" class="ptot">
+        <div class="ptl">PNL NETO ESTIMADO</div>
+        <div class="ptv" id="pv5">$—</div>
+      </div>
+      <div class="fnote" id="fnote"></div>
+    </div>
+  </div>
+
+  <!-- TRACKER -->
+  <div style="margin-bottom:16px;">
+    <div class="card" id="cTracker">
+      <div class="ttl"><span>🧮 TRACKER DE OPERACIÓN</span><span id="trkStatus" style="font-size:10px;color:var(--t3);">SIN OPERACIÓN</span></div>
+
+      <!-- Estado vacío: formulario de entrada -->
+      <div id="trkEmpty" class="trk-empty">
+        <div class="trk-desc">Registra los precios de entrada al abrir una operación delta-neutral. El tracker calculará el PNL en tiempo real comparando con los precios en vivo.</div>
+        <div class="trk-form">
+          <div class="trk-field">
+            <div class="trk-lbl">Precio entrada HyENA</div>
+            <input class="trk-input" type="number" id="trkEntryHL" step="0.01" placeholder="ej: 98500.00">
+          </div>
+          <div class="trk-field">
+            <div class="trk-lbl">Precio entrada Hibachi</div>
+            <input class="trk-input" type="number" id="trkEntryHib" step="0.01" placeholder="ej: 98450.00">
+          </div>
+          <div class="trk-field">
+            <div class="trk-lbl">Margen ($)</div>
+            <input class="trk-input" type="number" id="trkMargin" value="200" step="10">
+          </div>
+          <div class="trk-field">
+            <div class="trk-lbl">Apalancamiento</div>
+            <select class="trk-input" id="trkLev">
+              <option value="3">3x</option><option value="5" selected>5x</option><option value="10">10x</option><option value="20">20x</option>
+            </select>
+          </div>
+          <div class="trk-field full">
+            <div class="trk-lbl">Dirección HyENA</div>
+            <select class="trk-input" id="trkDir">
+              <option value="short">Short HyENA / Long Hibachi</option>
+              <option value="long">Long HyENA / Short Hibachi</option>
+            </select>
+          </div>
+        </div>
+        <button class="trk-btn trk-btn-go" onclick="trkRegister()">📍 REGISTRAR ENTRADA</button>
+        <button class="trk-btn trk-btn-fill" onclick="trkFillLive()">📡 Rellenar precios en vivo</button>
+      </div>
+
+      <!-- Estado activo: tracking en vivo -->
+      <div id="trkLive" class="trk-live">
+        <div class="trk-header">
+          <div class="trk-pair" id="trkPair">BTC</div>
+          <div class="trk-dir" id="trkDirBadge">Short HL / Long Hib</div>
+        </div>
+
+        <div class="trk-timer">
+          <span>⏱ Tiempo abierta:</span>
+          <span class="trk-timer-val" id="trkTime">00:00:00</span>
+        </div>
+
+        <div class="trk-pnl-box" id="trkPnlBox">
+          <div class="trk-pnl-lbl">PNL EN VIVO</div>
+          <div class="trk-pnl-val" id="trkPnlVal">$0.00</div>
+          <div class="trk-pnl-roi" id="trkRoi">ROI: 0.00%</div>
+        </div>
+
+        <div class="trk-grid">
+          <div class="trk-cell"><div class="trk-cell-lbl">Spread Entrada</div><div class="trk-cell-val" id="trkSpIn">—</div></div>
+          <div class="trk-cell"><div class="trk-cell-lbl">Spread Actual</div><div class="trk-cell-val" id="trkSpNow">—</div></div>
+          <div class="trk-cell"><div class="trk-cell-lbl">Ganancia Spread</div><div class="trk-cell-val" id="trkSpGain">—</div></div>
+          <div class="trk-cell"><div class="trk-cell-lbl">Funding Acumulado</div><div class="trk-cell-val" id="trkFundAcc">—</div></div>
+          <div class="trk-cell"><div class="trk-cell-lbl">Fees (Ida+Vuelta)</div><div class="trk-cell-val" id="trkFees">—</div></div>
+          <div class="trk-cell"><div class="trk-cell-lbl">Notional</div><div class="trk-cell-val" id="trkNot">—</div></div>
+        </div>
+
+        <div class="trk-entry-info" id="trkInfo"></div>
+        <button class="trk-btn trk-btn-close" onclick="trkReset()">✕ CERRAR OPERACIÓN Y RESETEAR</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="g21">
+    <div class="card">
+      <div class="ttl">
+        <span>📉 HISTÓRICO DE SPREAD — sesión actual</span>
+        <span id="hpts" style="color:var(--t3);font-size:9px;">0 puntos</span>
+      </div>
+      <div class="chwrap"><canvas id="ch"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ttl">
+        <span>📋 LOG DE SEÑALES</span>
+        <button class="btngh" onclick="clearLog()">LIMPIAR</button>
+      </div>
+      <div class="loglist" id="log">
+        <div style="text-align:center;color:var(--t3);font-size:11px;padding:18px;">Las señales aparecerán aquí…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tw" id="tw"></div>
+
+<div class="help-overlay" id="helpOverlay" onclick="if(event.target===this)hideHelp()">
+  <div class="help-modal">
+    <button class="help-close" onclick="hideHelp()">✕</button>
+    <div class="help-tit">📚 Guía Delta Neutral</div>
+    
+    <div class="help-sec">
+      <div class="help-st">¿Cómo se calcula el PNL?</div>
+      <div class="help-txt">El PNL Neto es la suma de tres componentes:</div>
+      <div class="help-txt">1. <strong>Ganancia Spread:</strong> La diferencia de precio entre DEXes. Siempre es positiva porque compramos barato y vendemos caro.</div>
+      <div class="help-txt">2. <strong>Funding Neto:</strong> Suma de lo que cobras menos lo que pagas por mantener las posiciones abiertas.</div>
+      <div class="help-txt">3. <strong>Costes:</strong> Restamos las Comisiones (Fees) y el Slippage (si usas Market).</div>
+    </div>
+
+    <div class="help-sec">
+      <div class="help-st">Limit vs Market</div>
+      <div class="help-txt"><strong>LIMIT:</strong> Eres "Maker". Pagas menos comisión (0.02% en HL, 0% en Hibachi) y no tienes Slippage, pero no garantizas la ejecución inmediata.</div>
+      <div class="help-txt"><strong>MARKET:</strong> Eres "Taker". Ejecución inmediata, pero pagas más comisión y asumes un coste estimado de slippage (0.05%).</div>
+    </div>
+
+    <div class="help-sec">
+      <div class="help-st">Significado del Semáforo</div>
+      <div class="help-txt">✅ <strong>VERDE:</strong> Spread amplio, costes cubiertos y funding favorable.</div>
+      <div class="help-txt">❌ <strong>ROJO:</strong> El spread es muy bajo para cubrir los costes de entrada, o el funding va en tu contra.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── UTILS ───────────────────────────────────────────────────────
+function q(id){ return document.getElementById(id); }
+function nT(){ return new Date().toLocaleTimeString('es-ES'); }
+function fP(v){ if(v==null||isNaN(v)) return '—'; return '$'+v.toLocaleString('en-US',{minimumFractionDigits:v>=1?4:5,maximumFractionDigits:v>=1?4:5}); }
+function fK(v){ return v>=1e9?'$'+(v/1e9).toFixed(2)+'B':v>=1e6?'$'+(v/1e6).toFixed(2)+'M':'$'+Math.round(v).toLocaleString('en-US'); }
+function dot(id,c){ q(id).style.background={green:'var(--green)',red:'var(--red)',amber:'var(--amber)'}[c]; }
+function setCard(id,c){ q(id).classList.remove('cg','cr','ca'); if(c) q(id).classList.add(c); }
+function clrCard(id){ q(id).classList.remove('cg','cr','ca'); }
+function setFund(pid,vid,f){ if(f==null||isNaN(f)){ q(vid).textContent='N/A'; q(pid).className='pm'; return; } q(vid).textContent=(f>=0?'+':'')+f.toFixed(4)+'%'; q(pid).className='pm '+(f>=0?'pos':'neg'); }
+function showHelp(){ q('helpOverlay').style.display='flex'; }
+function hideHelp(){ q('helpOverlay').style.display='none'; }
+function showCalc(){ q('cTracker').scrollIntoView({behavior:'smooth',block:'center'}); q('cTracker').style.borderColor='var(--blue)'; setTimeout(()=>{q('cTracker').style.borderColor='';},1500); }
+function trkFillLive(){ if(S.hl.px) q('trkEntryHL').value=S.hl.px; if(S.hib.px) q('trkEntryHib').value=S.hib.px; q('trkMargin').value=q('margin').value; q('trkLev').value=q('lev').value; if(S.decision) q('trkDir').value=S.decision.isShortHL?'short':'long'; toast('📡 Precios en vivo rellenados','in'); }
+function trkRegister(){
+  const eHL=parseFloat(q('trkEntryHL').value), eHib=parseFloat(q('trkEntryHib').value);
+  const mg=parseFloat(q('trkMargin').value)||200, lv=parseFloat(q('trkLev').value)||5;
+  const dir=q('trkDir').value;
+  if(!eHL||!eHib){ toast('⚠ Introduce precios de entrada','wn'); return; }
+  S.trk={active:true, sym:S.sym, entryHL:eHL, entryHib:eHib, margin:mg, lev:lv, dir:dir, not:mg*lv, startTime:Date.now(), fundAcc:0, lastFundHL:null, lastFundHib:null, fundPayments:0};
+  q('trkEmpty').style.display='none'; q('trkLive').style.display='block';
+  q('trkPair').textContent=S.sym;
+  q('trkDirBadge').textContent=dir==='short'?'Short HL / Long Hib':'Long HL / Short Hib';
+  q('trkStatus').textContent='🟢 EN SEGUIMIENTO'; q('trkStatus').style.color='var(--green)';
+  q('trkSpIn').textContent='$'+Math.abs(eHL-eHib).toFixed(2);
+  q('trkNot').textContent='$'+(mg*lv*2).toLocaleString('en-US');
+  const feesRT=(0.0002+0.0000)*(mg*lv)*2; q('trkFees').textContent='-$'+feesRT.toFixed(2); q('trkFees').style.color='var(--red)';
+  q('trkInfo').innerHTML='Entrada: HyENA <strong>'+fP(eHL)+'</strong> · Hibachi <strong>'+fP(eHib)+'</strong> · '+new Date().toLocaleTimeString('es-ES');
+  toast('📍 Operación registrada — tracking en vivo','go');
+}
+function trkReset(){
+  S.trk={active:false}; q('trkEmpty').style.display='block'; q('trkLive').style.display='none';
+  q('trkStatus').textContent='SIN OPERACIÓN'; q('trkStatus').style.color='var(--t3)';
+  q('trkPnlVal').textContent='$0.00'; q('trkRoi').textContent='ROI: 0.00%';
+  q('trkPnlBox').style.background=''; q('trkPnlBox').style.borderColor='var(--b1)';
+  toast('Operación cerrada','in');
+}
+function updateTracker(){
+  if(!S.trk||!S.trk.active) return;
+  const t=S.trk;
+  // Timer
+  const elapsed=Date.now()-t.startTime;
+  const h=Math.floor(elapsed/3600000), m=Math.floor((elapsed%3600000)/60000), s=Math.floor((elapsed%60000)/1000);
+  q('trkTime').textContent=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  // Si no hay precios en vivo, salir
+  if(!S.hl.px||!S.hib.px) return;
+  const p1=S.hl.px, p2=S.hib.px, not=t.not;
+  // Spread actual
+  q('trkSpNow').textContent='$'+Math.abs(p1-p2).toFixed(2);
+  // Ganancia spread: entrada vs cierre inverso
+  var spGain=0;
+  if(t.dir==='short'){
+    spGain=((t.entryHL-t.entryHib)/t.entryHL*not)+((p2-p1)/p1*not);
+  } else {
+    spGain=((t.entryHib-t.entryHL)/t.entryHL*not)+((p1-p2)/p1*not);
+  }
+  q('trkSpGain').textContent=(spGain>=0?'+':'')+'$'+spGain.toFixed(2);
+  q('trkSpGain').style.color=spGain>=0?'var(--green)':'var(--red)';
+  // Funding acumulado — sumar en cada tick proporcional al tiempo
+  const hoursElapsed=elapsed/3600000;
+  const fHL=S.hl.fund||0, fHib=S.hib.fund||0;
+  var fundEst=0;
+  if(t.dir==='short'){
+    fundEst=(fHL*hoursElapsed - fHib*(hoursElapsed/4))/100*not;
+  } else {
+    fundEst=(fHib*(hoursElapsed/4) - fHL*hoursElapsed)/100*not;
+  }
+  q('trkFundAcc').textContent=(fundEst>=0?'+':'')+'$'+fundEst.toFixed(3);
+  q('trkFundAcc').style.color=fundEst>=0?'var(--green)':'var(--red)';
+  // Fees ida+vuelta (limit ambos)
+  const fees=(0.0002+0.0000)*not*2;
+  // PNL total
+  const pnl=spGain+fundEst-fees;
+  const roi=(pnl/t.margin)*100;
+  q('trkPnlVal').textContent=(pnl>=0?'+':'')+'$'+pnl.toFixed(2);
+  q('trkPnlVal').style.color=pnl>=0?'var(--green)':'var(--red)';
+  q('trkRoi').textContent='ROI: '+(roi>=0?'+':'')+roi.toFixed(2)+'%';
+  q('trkRoi').style.color=roi>=0?'var(--green)':'var(--red)';
+  q('trkPnlBox').style.background=pnl>=0?'var(--gd)':'var(--rd)';
+  q('trkPnlBox').style.borderColor=pnl>=0?'rgba(0,232,122,0.3)':'rgba(255,59,92,0.3)';
+}
+function copyEl(id){ const el=q(id); if(!el)return; navigator.clipboard.writeText(el.innerText.replace('$','').replace(',','')); toast('📋 Copiado: '+el.innerText,'go'); }
+function post(url,body){return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})}
+
+
+// ─── STATE ───────────────────────────────────────────────────────
+const S = {
+  sym: 'BTC',
+  hl:  { px:null, fund:null, mark:null, oi:null, ok:false },
+  hib: { px:null, fund:null, mark:null, ok:false, manual:false, manV:null },
+  hist:[], soundOn:false, lastAlert:0, lastLog:0, loopT:null, progT:null, chart:null,
+  decision: null, // Almacena la mejor dirección calculada
+  miniHL:[], miniHib:[], miniChartHL:null, miniChartHib:null,
+  trk: {active:false}
+};
+
+// ─── AUDIO & TOAST ───────────────────────────────────────────────
+function beep(t='go'){ if(!S.soundOn) return; try{ const ac=new(window.AudioContext||window.webkitAudioContext)(); (t==='go'?[880,1100,1320]:[440,330]).forEach((f,i)=>{ const o=ac.createOscillator(),g=ac.createGain(); o.connect(g); g.connect(ac.destination); o.frequency.value=f; o.type='sine'; const s=ac.currentTime+i*0.13; g.gain.setValueAtTime(0.14,s); g.gain.exponentialRampToValueAtTime(0.001,s+0.18); o.start(s); o.stop(s+0.2); }); }catch(e){} }
+function toggleSound(){ S.soundOn=!S.soundOn; const b=q('sndbtn'); b.textContent=S.soundOn?'🔔':'🔕'; b.classList.toggle('on',S.soundOn); if(S.soundOn) beep('go'); toast(S.soundOn?'🔔 Alertas activadas':'🔕 Alertas desactivadas','in'); }
+let _lm='';
+function toast(msg,type='in'){ if(msg===_lm) return; _lm=msg; setTimeout(()=>{_lm='';},3500); const w=q('tw'), t=document.createElement('div'); t.className='toast '+{go:'tgo',wn:'twn',in:'tin',er:'ter'}[type]; t.textContent=msg; w.appendChild(t); setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity 0.3s';setTimeout(()=>t.remove(),300);},3500); }
+
+// ─── HYPERLIQUID ─────────────────────────────────────────────────
+async function fetchHL(){
+  try{
+    // Obtener del proxy local (ya viene ajustado a USDe)
+    const r = await fetch('/api/data');
+    const cache = await r.json();
+    
+    const hyena = cache.hyena || {};
+    const sym_data = hyena[S.sym];
+    
+    if(!sym_data) throw new Error(`${S.sym} no disponible`);
+    
+    const px = sym_data.px;
+    const fund = sym_data.fund;
+    
+    Object.assign(S.hl, {px, fund, mark:px, oi:null, ok:true});
+    animPx('pHL', px);
+    setFund('pmHLf', 'vHLf', fund);
+    q('vHLm').textContent = fP(px);
+    dot('dHL', 'green');
+    clrCard('cHL');
+    q('apiDotHL').style.background = 'var(--green)';
+    q('apiTxtHL').textContent = `HyENA (USDe ajustado) ✓ (${nT()})`;
+    return true;
+  }catch(e){
+    S.hl.ok = false;
+    dot('dHL', 'red');
+    setCard('cHL', 'cr');
+    q('pHL').textContent = 'ERR';
+    q('apiDotHL').style.background = 'var(--red)';
+    q('apiTxtHL').textContent = 'HyENA ✗ ' + e.message.substring(0,20);
+    return false;
+  }
+}
+
+// ─── HIBACHI (VIA PROXY) ─────────────────────────────────────────
+async function fetchHibachi(){
+  if(S.hib.manual && S.hib.manV!==null){ S.hib.px=S.hib.manV; S.hib.ok=true; updHib(S.hib.manV,null,'manual'); return true; }
+  try {
+    const r = await fetch('/api/data', { signal: AbortSignal.timeout(2000) });
+    const data = await r.json();
+    const coin = data.hibachi[S.sym];
+
+    if (coin) {
+      Object.assign(S.hib, { px: coin.px, fund: coin.fund, mark: coin.px, ok: true });
+      updHib(coin.px, coin.fund, 'proxy-smart');
+      q('mbox').style.display='none';
+      return true;
+    } else {
+      showManual(); return false;
+    }
+  } catch (e) {
+    q('apiTxtHib').textContent='Proxy desconectado'; q('apiDotHib').style.background='var(--red)';
+    showManual(); return false;
+  }
+}
+function updHib(px,fund,src){
+  animPx('pHib',px); setFund('pmHibf','vHibf',fund); q('vHibm').textContent=fP(px);
+  dot('dHib','green'); clrCard('cHib');
+  q('apiTxtHib').textContent='Hibachi ✓'; q('apiDotHib').style.background='var(--green)';
+  q('ldot').style.background='var(--green)'; q('ltxt').textContent='EN VIVO'; q('ldot').classList.remove('blink'); q('lbadge').style.background='var(--gd)'; q('lbadge').style.borderColor='rgba(0,232,122,0.25)'; q('lbadge').style.color='var(--green)';
+}
+function showManual(){ const b=q('mbox'); b.style.display='flex'; dot('dHib','amber'); setCard('cHib','ca'); }
+function setManual(){ const v=parseFloat(q('minput').value); if(!isNaN(v)&&v>0){ S.hib.manV=v; S.hib.manual=true; S.hib.px=v; S.hib.ok=true; updHib(v,null,'manual'); tick(); } }
+
+// ─── CALC & UI LOGIC ─────────────────────────────────────────────
+const ppx={};
+function animPx(id,px){ const e=q(id), prev=ppx[id]; if(prev!==undefined&&prev!==px){ e.style.color=px>prev?'var(--green)':'var(--red)'; setTimeout(()=>{e.style.color='var(--tx)';e.style.transition='color 0.6s';},600); } ppx[id]=px; e.textContent=fP(px); }
+
+// ─── SPREAD INTELIGENTE (Spread + Funding) ──────────────────────
+function updateSpread(){
+  if(!S.hl.px||!S.hib.px) return null;
+  
+  const p1 = S.hl.px; // HyENA
+  const p2 = S.hib.px; // Hibachi
+  const not = (parseFloat(q('margin').value)||200) * (parseFloat(q('lev').value)||5);
+  const pr = parseFloat(q('periods').value)||3;
+
+  // Tasas de Funding (% actual)
+  const fHL = S.hl.fund || 0;
+  const fHib = S.hib.fund || 0;
+
+  // ESCENARIO 1: Short HyENA / Long Hibachi
+  const spreadGain_1 = (p1 - p2) / p1 * not; 
+  const now = new Date();
+  const msInHour = 3600000;
+  const end = new Date(now.getTime() + pr * msInHour);
+  
+  // Pagos HyENA: contar horas en punto entre ahora y fin
+  let hyenaPays = 0;
+  const nextHour = new Date(now);
+  nextHour.setMinutes(0, 0, 0);
+  nextHour.setHours(nextHour.getHours() + 1);
+  for(let t = new Date(nextHour); t <= end; t.setHours(t.getHours() + 1)) hyenaPays++;
+  
+  // Pagos Hibachi: contar marcas de 4h (00,04,08,12,16,20 UTC) entre ahora y fin
+  let hibPays = 0;
+  const nextHib = new Date(now);
+  const hibH = nextHib.getUTCHours();
+  const nextHibH = Math.ceil((hibH + (nextHib.getUTCMinutes()>0?1:0)) / 4) * 4;
+  nextHib.setUTCHours(nextHibH, 0, 0, 0);
+  if(nextHib <= now) nextHib.setUTCHours(nextHib.getUTCHours() + 4);
+  for(let t = new Date(nextHib); t <= end; t.setUTCHours(t.getUTCHours() + 4)) hibPays++;
+  
+  console.log(`[Funding] ${pr}h → HyENA: ${hyenaPays} pagos, Hibachi: ${hibPays} pagos`);
+  
+  // Funding Net con pagos reales
+  const fundGain_1 = (fHL * hyenaPays - fHib * hibPays) / 100 * not;
+  const total_1 = spreadGain_1 + fundGain_1;
+  
+  // ESCENARIO 2: Long HyENA / Short Hibachi
+  const spreadGain_2 = (p2 - p1) / p1 * not;
+  const fundGain_2 = (fHib * hibPays - fHL * hyenaPays) / 100 * not;
+  const total_2 = spreadGain_2 + fundGain_2;
+
+  // DECISIÓN: ¿Cuál escenario da más dinero?
+  const isShortHL = total_1 > total_2;
+  
+  const hlHi = p1 > p2;
+  const absV = Math.abs(p1 - p2);
+  const pctV = (absV / p1) * 100;
+  const thr = parseFloat(q('thresh').value)||0.10;
+  
+  const negativeSpread = (isShortHL && p2 > p1) || (!isShortHL && p1 > p2);
+
+  // Pintar valores
+  q('spAbs').textContent = '$' + absV.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const pe = q('spPct');
+  pe.textContent = (negativeSpread ? '-' : '') + pctV.toFixed(3) + '%';
+  pe.style.color = negativeSpread ? 'var(--red)' : (pctV < thr ? 'var(--green)' : 'var(--amber)');
+
+  const de = q('spDir');
+  const dirText = isShortHL ? 'Short HyENA / Long Hibachi' : 'Long HyENA / Short Hibachi';
+  
+  if (negativeSpread) {
+      de.textContent = '🔥 FUNDING PLAY: ' + dirText;
+      de.style.background = 'rgba(168,85,247,0.15)';
+      de.style.color = 'var(--purple)';
+      de.style.border = '1px solid var(--purple)';
+  } else {
+      de.textContent = dirText;
+      de.style.background = 'rgba(255,255,255,0.03)';
+      de.style.color = 'var(--t2)';
+      de.style.border = '1px solid var(--b1)';
+  }
+
+  q('spSym').textContent = S.sym;
+  q('execDir').textContent = dirText;
+
+  // Actualizar CAJA DE EJECUCIÓN
+  q('lpBlock').style.display='block';
+  const typeHL = q('hlType').value;
+  const typeHib = q('hibType').value;
+  
+  const actHL = q('lpHLaction');
+  actHL.textContent = isShortHL ? (typeHL==='limit'?'SELL (LMT)':'SELL (MKT)') : (typeHL==='limit'?'BUY (LMT)':'BUY (MKT)');
+  actHL.style.color = isShortHL ? 'var(--red)' : 'var(--green)';
+  q('lpHLval').textContent = fP(p1); 
+
+  const actHib = q('lpHibAction');
+  actHib.textContent = isShortHL ? (typeHib==='limit'?'BUY (LMT)':'BUY (MKT)') : (typeHib==='limit'?'SELL (LMT)':'SELL (MKT)');
+  actHib.style.color = isShortHL ? 'var(--green)' : 'var(--red)';
+  q('lpHibval').textContent = fP(p2);
+
+  S.decision = { isShortHL, negativeSpread, spreadGain: (isShortHL?spreadGain_1:spreadGain_2), fundGain: (isShortHL?fundGain_1:fundGain_2) };
+
+  return { pctV, absV };
+}
+
+// ─── LÓGICA DE PNL (Sincronizada con Dirección) ─────────────────
+function recalc(){
+  if(!S.hl.px||!S.hib.px||!S.decision) return;
+
+  const mg = parseFloat(q('margin').value)||200;
+  const lv = parseFloat(q('lev').value)||5;
+  const not = mg * lv;
+  
+  const { isShortHL, negativeSpread, spreadGain, fundGain } = S.decision;
+  
+  // Costes de Entrada (Fees + Slippage)
+  const typeHL  = q('hlType').value; 
+  const typeHib = q('hibType').value;
+  
+  const rateHL  = typeHL ==='limit' ? 0.0002 : 0.0006;  
+  const rateHib = typeHib==='limit' ? 0.0000 : 0.00045; 
+  const feesUSD = (rateHL + rateHib) * not;
+  
+  const slipHL  = typeHL ==='market' ? 0.0005 * not : 0;
+  const slipHib = typeHib==='market' ? 0.0005 * not : 0;
+  const totalEntryCost = feesUSD + slipHL + slipHib;
+
+  // PNL NETO
+  const pnlNet = spreadGain + fundGain - totalEntryCost;
+
+  // Actualizar Semáforo
+  const th = parseFloat(q('thresh').value)||0.10;
+  const pctDisplay = negativeSpread ? -Math.abs((spreadGain/not)*100) : Math.abs((spreadGain/not)*100);
+  
+  const chks=[
+    {v:`${pctDisplay.toFixed(3)}%`, pass: negativeSpread ? true : (pctDisplay > 0 && pctDisplay < th)},
+    {v:`$${totalEntryCost.toFixed(2)}`, pass: totalEntryCost < not*0.015},
+    {v:`$${fundGain.toFixed(3)}`,    pass: fundGain > 0},
+    {v:`${pnlNet > 0 ? (pnlNet/totalEntryCost).toFixed(2) : '0.00'}x`, pass: pnlNet > totalEntryCost},
+    {v:`$${pnlNet.toFixed(2)}`,     pass: pnlNet > 0},
+  ];
+
+  chks.forEach((c,i)=>{
+    q('sv'+i).textContent=c.v; q('sv'+i).style.color=c.pass?'var(--green)':'var(--red)';
+    q('sp'+i).textContent=c.pass?'✅':'❌';
+  });
+
+  const passed = chks.filter(c=>c.pass).length;
+  const gb = q('gobox');
+
+  if (passed === 5 || (passed === 4 && pnlNet > 1.5)) {
+      gb.className = 'gobox gg';
+      if (negativeSpread) {
+          gb.textContent = '🟢 FUNDING ARBITRAGE (Spread negativo compensado)';
+      } else {
+          gb.textContent = '🟢 SEÑAL FUERTE - Todas las condiciones cumplidas';
+      }
+      setCard('cSem', 'cg');
+      try{ trigAlert(Math.abs((S.decision.spreadGain / (mg * lv)) * 100)); }catch(e){}
+
+  } else if (passed >= 3 && pnlNet > 0) {
+      gb.className = 'gobox ga';
+      if (pnlNet < 1.5) {
+          gb.textContent = `🟡 MARGEN AJUSTADO (${passed}/5) - PNL bajo: $${pnlNet.toFixed(2)}`;
+      } else {
+          gb.textContent = `🟡 REVISAR (${passed}/5) - Algunas condiciones no cumplen`;
+      }
+      setCard('cSem', 'ca');
+
+  } else {
+      gb.className = 'gobox gr';
+      if (pnlNet < 0) {
+          gb.textContent = `🔴 NO RENTABLE - PNL negativo: $${pnlNet.toFixed(2)}`;
+      } else if (fundGain <= 0) {
+          gb.textContent = '🔴 FUNDING INSUFICIENTE - No compensa costes';
+      } else {
+          gb.textContent = `🔴 CONDICIONES POBRES (${passed}/5)`;
+      }
+      setCard('cSem', 'cr');
+  }
+
+  // Panel PNL
+  q('pnlsym').textContent=S.sym;
+  q('pv0').textContent='$'+(not*2).toLocaleString('en-US',{minimumFractionDigits:0});
+  q('pv1').textContent='-$'+feesUSD.toFixed(2);
+  
+  q('pv2').textContent = (spreadGain>=0?'+':'') + '$' + spreadGain.toFixed(2);
+  q('pv2').style.color = spreadGain>=0?'var(--green)':'var(--red)';
+  
+  q('pv3').textContent = (fundGain>=0?'+':'') + '$' + fundGain.toFixed(3);
+  q('pv3').style.color = fundGain>=0?'var(--green)':'var(--red)';
+
+  const pr = parseFloat(q('periods').value)||8;
+  const be = pr > 0 ? (totalEntryCost / (not * pr) * 100) : 0;
+
+  q('pv4').textContent = be.toFixed(4)+'% / hora promedio';
+  
+  q('pv5').textContent=(pnlNet>=0?'+':'')+'$'+pnlNet.toFixed(2);
+  q('pv5').style.color=pnlNet>=0?'var(--green)':'var(--red)';
+  
+  const pb=q('ptot'); 
+  pb.style.background=pnlNet>=0?'var(--gd)':'var(--rd)';
+  pb.style.borderColor=pnlNet>=0?'rgba(0,232,122,0.3)':'rgba(255,59,92,0.3)';
+
+  const dirStr = isShortHL ? 'Short HL / Long Hib' : 'Long HL / Short Hib';
+  q('fnote').innerHTML = `<span style="color:var(--t2)">Estrategia:</span> <strong>${dirStr}</strong><br><span style="opacity:0.5;font-size:9px">Dirección optimizada automáticamente por PNL total (Spread + Funding).</span>`;
+}
+
+// ─── CHART & LOG ─────────────────────────────────────────────────
+function initChart(){ S.chart=new Chart(q('ch').getContext('2d'),{ type:'line', data:{labels:[],datasets:[ {label:'Spread %',data:[],borderColor:'#3b9eff',backgroundColor:'rgba(59,158,255,0.07)',borderWidth:2,pointRadius:2,pointBackgroundColor:'#3b9eff',fill:true,tension:0.35}, {label:'Umbral',data:[],borderColor:'rgba(255,184,63,0.5)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false} ]}, options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a2535',titleColor:'#7f8da0',bodyColor:'#e8ecf4',borderColor:'rgba(255,255,255,0.08)',borderWidth:1,cornerRadius:8,padding:10,callbacks:{label:c=>` ${c.parsed.y.toFixed(4)}%`}}},scales:{x:{grid:{color:'rgba(255,255,255,0.025)'},ticks:{color:'#3f4a5a',font:{family:"'JetBrains Mono'",size:9},maxTicksLimit:7}},y:{grid:{color:'rgba(255,255,255,0.025)'},ticks:{color:'#3f4a5a',font:{family:"'JetBrains Mono'",size:9},callback:v=>v.toFixed(3)+'%'},beginAtZero:true}}} }); }
+function updateChart(){ if(!S.chart) return; const th=parseFloat(q('thresh').value)||0.10; const h=S.hist.slice(-80), vals=h.map(x=>x.pct), last=vals.length?vals[vals.length-1]:99; S.chart.data.labels=h.map(x=>new Date(x.t).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'})); S.chart.data.datasets[0].data=vals; S.chart.data.datasets[0].borderColor=last<th?'#00e87a':'#3b9eff'; S.chart.data.datasets[0].backgroundColor=last<th?'rgba(0,232,122,0.07)':'rgba(59,158,255,0.07)'; S.chart.data.datasets[1].data=Array(h.length).fill(th); S.chart.update('none'); }
+function mkMini(id,color){return new Chart(q(id).getContext('2d'),{type:'line',data:{labels:[],datasets:[{data:[],borderColor:color,backgroundColor:color.replace('1)','0.08)'),borderWidth:1.5,pointRadius:0,fill:true,tension:0.4}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}});}
+function initMiniCharts(){S.miniChartHL=mkMini('miniHL','rgba(168,85,247,1)');S.miniChartHib=mkMini('miniHib','rgba(59,158,255,1)');}
+function updateMiniCharts(){
+  if(S.hl.px){S.miniHL.push(S.hl.px);if(S.miniHL.length>30)S.miniHL.shift();S.miniChartHL.data.labels=S.miniHL.map((_,i)=>i);S.miniChartHL.data.datasets[0].data=[...S.miniHL];S.miniChartHL.update('none');}
+  if(S.hib.px){S.miniHib.push(S.hib.px);if(S.miniHib.length>30)S.miniHib.shift();S.miniChartHib.data.labels=S.miniHib.map((_,i)=>i);S.miniChartHib.data.datasets[0].data=[...S.miniHib];S.miniChartHib.update('none');}
+}
+function logEntry(sym, hours){
+  const list = q('log');
+  // Si ya hay una entrada para este símbolo, no duplicar
+  if(list.querySelector(`[data-sym="${sym}"]`)) return;
+  // Limpiar placeholder
+  if(list.children.length===1 && list.firstChild.style.textAlign==='center') list.innerHTML='';
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('es-ES');
+  const d = document.createElement('div');
+  d.className = 'li';
+  d.setAttribute('data-sym', sym);
+  d.innerHTML = `<span class="lt">${timeStr}</span><span class="lsy">${sym}</span><span class="lsp g">🟢 FUERTE</span><span class="ldi">${hours}h operación</span><span class="lvi">✅</span>`;
+  list.prepend(d);
+  // Auto-borrar a los 10 minutos
+  setTimeout(()=>{ d.remove(); if(!list.children.length) list.innerHTML='<div style="text-align:center;color:var(--t3);font-size:11px;padding:18px;">Sin señales activas</div>'; }, 600000);
+}
+function clearLog(){ q('log').innerHTML='<div style="text-align:center;color:var(--t3);font-size:11px;padding:18px;">Log limpiado</div>'; }
+function trigAlert(pct){
+  const n = Date.now(); if(n - S.lastAlert < 15000) return; S.lastAlert = n;
+  beep('go');
+  toast(`✅ SEÑAL FUERTE ${S.sym} — Spread ${pct.toFixed(3)}%`,'go');
+  const hours = parseFloat(q('periods').value)||8;
+  logEntry(S.sym, hours);
+}
+
+// ─── LOOP CONTROL ────────────────────────────────────────────────
+async function tick(){ await Promise.all([fetchHL(), fetchHibachi()]); const sp=updateSpread(); recalc(); if(sp){ S.hist.push({t:Date.now(),pct:sp.pctV}); updateChart(); } updateMiniCharts(); updateTracker(); }
+function restartLoop(){ clearInterval(S.loopT); const rate=parseInt(q('rate').value)||3000; tick(); S.loopT=setInterval(tick,rate); startProg(); }
+function startProg(){ /* barras eliminadas */ }
+function onSymChange(){ S.sym=q('sym').value; S.hl={px:null,fund:null,mark:null,oi:null,ok:false}; S.hib={px:null,fund:null,mark:null,ok:false,manual:false,manV:null}; S.hist=[]; S.miniHL=[]; S.miniHib=[]; updateChart(); toast('🔄 Cambiando a '+S.sym,'in'); restartLoop(); }
+window.addEventListener('load',()=>{ initChart(); initMiniCharts(); restartLoop(); toast('⚡ Conectando…','in'); });
+</script>
+</body>
+</html>

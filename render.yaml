@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: delta-neutral-dashboard
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python proxy.py
+    envVars:
+      - key: PORT
+        value: 10000
+    plan: free
+    healthCheckPath: /api/health
