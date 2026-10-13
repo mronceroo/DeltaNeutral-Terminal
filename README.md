@@ -10,32 +10,9 @@ Dashboard en tiempo real para monitorizar spreads y oportunidades de funding rat
 | `index.html` | Dashboard frontend (single-file HTML/JS/CSS) |
 | `render.yaml` | Configuración de deploy para Render.com |
 
-## Deploy en Render.com (Gratis)
+## Visitar
 
-### Opción A: Deploy automático desde GitHub
-
-1. Sube esta carpeta a un repositorio en GitHub
-2. Ve a [render.com](https://render.com) → New → Web Service
-3. Conecta tu repo de GitHub
-4. Render detectará el `render.yaml` automáticamente
-5. Click en **Deploy** → listo
-
-### Opción B: Deploy manual en Render
-
-1. Ve a [render.com](https://render.com) → New → Web Service
-2. Conecta tu repo
-3. Configura:
-   - **Runtime**: Python
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `python proxy.py`
-4. Deploy
-
-### URL
-
-Una vez desplegado, Render te dará una URL tipo:  
-`https://delta-neutral-dashboard.onrender.com`
-
-Ábrela en el móvil y listo.
+https://deltaneutral-terminal.onrender.com/
 
 ## Ejecución local
 
